@@ -32,6 +32,17 @@ EduPulse follows the architecture and workflow demonstrated in the BizPulse refe
   - Semester-wise Academic Performance and Attendance Trend Lines
 - **Multi-Level Global Filters:** Filter metrics and charts by Department, Semester, Subject, and Custom Date Window.
 
+### 📈 Graphical Reports & Visual Analytics (New Module)
+- **Dedicated Navigation Page:** Access deep-dive visual analytics and downloadable institutional reports.
+- **6 Specialized Graphical Reports:**
+  1. **Student Performance Report:** Marks by student bar chart, min/avg/max score comparison, marks distribution histogram, department averages, semester trends, and top-performing students ranking table.
+  2. **Attendance Analysis:** Department attendance averages, attendance distribution histogram, attendance vs. marks scatter with quadrant breakdown, and low attendance (< 75%) register.
+  3. **Subject Analysis:** Pass percentage by subject, average marks horizontal bar chart, assignment score box plot, and curriculum review alerts for lower-performing courses.
+  4. **Study Hours Analysis:** Study hours vs marks scatter plot with linear trendline, average marks grouped by study-hour brackets, department-wise average study hours, and ethical/pedagogical disclosure.
+  5. **Academic Support Report:** Unique student count flagged for support (no double-counting), categorical advisory distribution chart, and detailed mentoring registry with actionable intervention strategies.
+  6. **Overall Institutional Summary:** Summary KPIs, department and semester comparison tables, data-driven key academic observations, and multi-format exports.
+- **Downloadable Formatted PDF Academic Reports:** Generated with **ReportLab** and embedded high-resolution **Plotly** chart images via **Kaleido**.
+
 ### 👤 Student Profile Management
 - Enroll students with Student ID, Full Name, Department, and Semester (Sem 1 to Sem 12).
 - Automatic trimming, duplicate ID prevention, and data validation.
@@ -73,6 +84,38 @@ EduPulse follows the architecture and workflow demonstrated in the BizPulse refe
 - **Database Driver:** `mysql-connector-python`
 - **Data Processing:** [Pandas](https://pandas.pydata.org/)
 - **Data Visualizations:** [Plotly Express & Graph Objects](https://plotly.com/python/)
+- **PDF Report Generation:** [ReportLab](https://www.reportlab.com/)
+- **Static Chart Image Rendering:** [Kaleido](https://github.com/plotly/Kaleido)
+- **Configuration:** `python-dotenv` for local environment variables
+- **Testing Frameworks:** `pytest` and Python `unittest`
+- **Version Control:** Git & GitHub
+
+---
+
+## 📁 4. Project Folder Structure
+
+```text
+EduPulse/
+├── app.py                      # Main Streamlit web application & page navigation
+├── db.py                       # MySQL connection management, schema init & CRUD operations
+├── analytics.py                # Validation rules, dynamic KPIs & recommendation engine
+├── reports.py                  # Graphical reports module, chart builders & ReportLab PDF generator
+├── database.sql                # Complete MySQL DDL schema script with constraints & indexes
+├── requirements.txt            # Python dependencies
+├── .env.example                # Template for database environment variables
+├── .env                        # Local database credentials (ignored by Git)
+├── .gitignore                  # Git ignore rules for virtual environments and secrets
+├── README.md                   # Complete documentation and setup manual
+├── data/
+│   ├── sample_students.csv     # Synthetic student dataset for testing & demonstration
+│   └── sample_performance.csv  # Synthetic performance records for testing & demonstration
+└── tests/
+    ├── __init__.py             # Test suite package initializer
+    ├── test_validation.py      # Tests for inputs, boundary ranges, and CSV validation
+    ├── test_analytics.py       # Tests for dynamic KPIs, aggregations, and advisory rules
+    ├── test_reports.py         # Tests for visual reports, pass rate distinctions & PDF generation
+    └── test_db.py              # Tests for database configuration, queries, and transactions
+```
 - **Configuration:** `python-dotenv` for local environment variables
 - **Testing Frameworks:** `pytest` and Python `unittest`
 - **Version Control:** Git & GitHub

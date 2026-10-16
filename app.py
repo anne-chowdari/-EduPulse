@@ -11,6 +11,7 @@ import streamlit as st
 
 import db
 import analytics
+import reports
 
 
 # -----------------------------------------------------------------------------
@@ -180,6 +181,7 @@ page = st.sidebar.radio(
     "Go to",
     [
         "Dashboard",
+        "Graphical Reports",
         "Add Student",
         "Record Performance",
         "Student Records",
@@ -315,6 +317,368 @@ if page == "Dashboard":
                         ]].rename(columns={"study_hours": "daily_study_hrs"}),
                         use_container_width=True,
                     )
+
+
+# -----------------------------------------------------------------------------
+# PAGE: GRAPHICAL REPORTS & VISUAL ANALYTICS
+# -----------------------------------------------------------------------------
+
+elif page == "Graphical Reports":
+    st.subheader("📈 Graphical Reports & Visual Analytics")
+    st.caption("Interactive visual intelligence, subject-level breakdowns, correlation matrices, and downloadable PDF reports.")
+
+    if not db_is_healthy:
+        st.error("Database connection required to generate graphical reports.")
+    else:
+        students_df = db.get_all_students()
+        all_perf_df = db.get_all_performance()
+
+        if students_df.empty or all_perf_df.empty:
+            st.warning("⚠️ **Insufficient Data for Visual Reports:** No student performance records found in database.")
+            st.info("Tip: You can add student assessments via **Record Performance** or batch-import test datasets via **Reports & Data Import**.")
+        else:
+            # Report Filters
+            with st.expander("🔍 Interactive Report Filters", expanded=True):
+                fcol1, fcol2, fcol3, fcol4, fcol5 = st.columns(5)
+
+                depts = ["All"] + sorted(list(students_df["department"].dropna().unique()))
+                with fcol1:
+                    rep_dept = st.selectbox("Department", depts, key="rep_dept")
+
+                sems = ["All"] + sorted(list(students_df["semester"].dropna().unique()))
+                with fcol2:
+                    rep_sem = st.selectbox("Semester", sems, key="rep_sem")
+
+                subjects = ["All"] + sorted(list(all_perf_df["subject"].dropna().unique()))
+                with fcol3:
+                    rep_subj = st.selectbox("Subject", subjects, key="rep_subj")
+
+                with fcol4:
+                    rep_time = st.selectbox("Date Scope", ["All Recorded Dates", "Custom Range"], key="rep_time")
+
+                student_opts = ["All Students"] + [
+                    f"{r['student_id']} - {r['student_name']}" for _, r in students_df.iterrows()
+                ]
+                with fcol5:
+                    rep_student = st.selectbox("Student Focus", student_opts, key="rep_student")
+
+                rep_from = None
+                rep_to = None
+                if rep_time == "Custom Range":
+                    r_c1, r_c2 = st.columns(2)
+                    with r_c1:
+                        rep_from = st.date_input("Start Date", date(2026, 1, 1), key="rep_dfrom")
+                    with r_c2:
+                        rep_to = st.date_input("End Date", date.today(), key="rep_dto")
+
+            # Fetch joined filtered data
+            merged_df = db.get_merged_data(
+                department=rep_dept if rep_dept != "All" else None,
+                semester=rep_sem if rep_sem != "All" else None,
+                subject=rep_subj if rep_subj != "All" else None,
+                date_from=rep_from,
+                date_to=rep_to,
+            )
+
+            # Further filter by individual student if selected
+            if rep_student != "All Students":
+                sel_sid = rep_student.split(" - ")[0].strip()
+                merged_df = merged_df[merged_df["student_id"] == sel_sid]
+
+            if merged_df.empty:
+                st.warning("⚠️ No performance records match the active filter criteria. Try adjusting or resetting your filters.")
+            else:
+                # Top KPI Summary Bar
+                overall_summary = reports.get_overall_academic_summary(merged_df, students_df=students_df)
+
+                k1, k2, k3, k4, k5, k6, k7 = st.columns(7)
+                k1.metric("Students", f"{overall_summary['total_students']}")
+                k2.metric("Assessments", f"{overall_summary['total_assessments']}")
+                k3.metric("Avg Marks", f"{overall_summary['overall_avg_marks']:.1f}")
+                k4.metric("Avg Attendance", f"{overall_summary['overall_avg_attendance']:.1f}%")
+                k5.metric("Student Pass Rate", f"{overall_summary['student_pass_rate']:.1f}%")
+                k6.metric("Exam Pass Rate", f"{overall_summary['assessment_pass_rate']:.1f}%")
+                k7.metric("Need Support", f"{overall_summary['students_needing_support']}")
+
+                st.caption(
+                    "ℹ️ **Distinction Note:** *Student Pass Rate* evaluates each unique student's overall performance "
+                    "(mean across all taken subjects ≥ 40.0), whereas *Exam Pass Rate* evaluates the percentage of all recorded "
+                    "subject tests meeting the pass benchmark."
+                )
+
+                st.divider()
+
+                # Report Sub-Tabs
+                tab_perf, tab_att, tab_subj, tab_study, tab_supp, tab_summary = st.tabs([
+                    "📊 Student Performance Report",
+                    "📅 Attendance Analysis",
+                    "📚 Subject Analysis",
+                    "⏱️ Study Hours Analysis",
+                    "🚨 Academic Support Report",
+                    "📋 Overall Summary & Export",
+                ])
+
+                # -------------------------------------------------------------
+                # TAB A: Student Performance Report
+                # -------------------------------------------------------------
+                with tab_perf:
+                    st.markdown("#### 📊 Student Performance Analytics")
+                    st.caption("Student-level score distributions, subject comparisons, and academic standing rankings.")
+
+                    p_col1, p_col2 = st.columns(2)
+                    with p_col1:
+                        fig_smarks = reports.create_student_marks_bar_chart(merged_df)
+                        st.plotly_chart(fig_smarks, use_container_width=True)
+                    with p_col2:
+                        fig_sdist = analytics.create_performance_distribution_chart(merged_df)
+                        st.plotly_chart(fig_sdist, use_container_width=True)
+
+                    p_col3, p_col4 = st.columns(2)
+                    with p_col3:
+                        fig_scomp = reports.create_subject_marks_comparison_chart(merged_df)
+                        st.plotly_chart(fig_scomp, use_container_width=True)
+                    with p_col4:
+                        fig_sdept = analytics.create_marks_by_department_chart(merged_df)
+                        st.plotly_chart(fig_sdept, use_container_width=True)
+
+                    p_col5, _ = st.columns([2, 1])
+                    with p_col5:
+                        fig_ssem = analytics.create_semester_performance_chart(merged_df)
+                        st.plotly_chart(fig_ssem, use_container_width=True)
+
+                    st.markdown("##### 🏆 Top-Performing Students (Student-Level Aggregation)")
+                    top_df = reports.get_top_performing_students(merged_df, top_n=10)
+                    st.dataframe(top_df, use_container_width=True)
+
+                # -------------------------------------------------------------
+                # TAB B: Attendance Analysis Report
+                # -------------------------------------------------------------
+                with tab_att:
+                    st.markdown("#### 📅 Attendance & Academic Engagement")
+                    st.caption("Department attendance compliance, frequency distribution, and attendance vs score correlation.")
+
+                    a_col1, a_col2 = st.columns(2)
+                    with a_col1:
+                        fig_adept = reports.create_attendance_by_dept_chart(merged_df)
+                        st.plotly_chart(fig_adept, use_container_width=True)
+                    with a_col2:
+                        fig_adist = reports.create_attendance_distribution_chart(merged_df)
+                        st.plotly_chart(fig_adist, use_container_width=True)
+
+                    fig_ascat = analytics.create_attendance_vs_marks_chart(merged_df)
+                    st.plotly_chart(fig_ascat, use_container_width=True)
+
+                    # Attendance Quadrants & Low Attendance Table
+                    dept_att_df, low_att_df, quadrants = reports.get_attendance_analysis_data(merged_df, threshold=75.0)
+
+                    st.markdown("##### 🧭 Attendance & Academic Quadrant Distribution")
+                    q1, q2, q3, q4 = st.columns(4)
+                    q1.metric("High Att (≥75%) & Pass", quadrants["High Att & Pass"])
+                    q2.metric("High Att (≥75%) & Need Support", quadrants["High Att & Need Support"])
+                    q3.metric("Low Att (<75%) & Pass", quadrants["Low Att & Pass"])
+                    q4.metric("Low Att (<75%) & Need Support", quadrants["Low Att & Need Support"])
+
+                    st.markdown("##### ⚠️ Students with Attendance Below Institutional Threshold (< 75%)")
+                    if low_att_df.empty:
+                        st.success("🎉 All evaluated students currently meet the minimum 75% institutional attendance requirement.")
+                    else:
+                        st.dataframe(low_att_df, use_container_width=True)
+
+                # -------------------------------------------------------------
+                # TAB C: Subject Analysis Report
+                # -------------------------------------------------------------
+                with tab_subj:
+                    st.markdown("#### 📚 Subject-Level Performance & Assessment Breakdown")
+                    st.caption("Evaluation of subject difficulty, pass percentages, and continuous assignment completion.")
+
+                    subj_perf_df = reports.get_subject_performance_analysis(merged_df, pass_threshold=40.0)
+
+                    s_col1, s_col2 = st.columns(2)
+                    with s_col1:
+                        fig_subpass = reports.create_subject_pass_rate_chart(subj_perf_df)
+                        st.plotly_chart(fig_subpass, use_container_width=True)
+                    with s_col2:
+                        fig_subavg = analytics.create_marks_by_subject_chart(merged_df)
+                        st.plotly_chart(fig_subavg, use_container_width=True)
+
+                    fig_subasg = analytics.create_assignment_by_subject_chart(merged_df)
+                    st.plotly_chart(fig_subasg, use_container_width=True)
+
+                    # Highlight lower average subjects
+                    low_subjs = subj_perf_df[subj_perf_df["status"] == "Needs Attention"]
+                    if not low_subjs.empty:
+                        st.warning(
+                            f"⚠️ **Curriculum Review Alert:** The following course(s) recorded average marks below 50.0 or pass rates below 70%: "
+                            f"**{', '.join(low_subjs['subject'].tolist())}**."
+                        )
+
+                    st.markdown("##### 📋 Complete Subject Assessment Statistics")
+                    st.dataframe(subj_perf_df, use_container_width=True)
+
+                # -------------------------------------------------------------
+                # TAB D: Study Hours Analysis
+                # -------------------------------------------------------------
+                with tab_study:
+                    st.markdown("#### ⏱️ Study Hours & Academic Outcome Associations")
+                    st.caption("Analysis of daily study preparation hours and academic score distributions.")
+
+                    st.info(
+                        "💡 **Pedagogical Insight:** Visualizations demonstrate statistical associations within the collected data "
+                        "and do not constitute proof of causation. Academic mastery is influenced by course complexity, teaching quality, "
+                        "and active learning methodologies."
+                    )
+
+                    binned_study_df, dept_study_df, corr_coef = reports.get_study_hours_analysis(merged_df)
+
+                    h_col1, h_col2 = st.columns(2)
+                    with h_col1:
+                        fig_hscat = reports.create_study_hours_vs_marks_chart(merged_df)
+                        st.plotly_chart(fig_hscat, use_container_width=True)
+                    with h_col2:
+                        fig_hbin = reports.create_study_hours_binned_chart(binned_study_df)
+                        st.plotly_chart(fig_hbin, use_container_width=True)
+
+                    h_col3, h_col4 = st.columns([1, 1])
+                    with h_col3:
+                        fig_hdept = reports.create_dept_study_hours_chart(dept_study_df)
+                        st.plotly_chart(fig_hdept, use_container_width=True)
+                    with h_col4:
+                        st.markdown("##### 📊 Study-Hour Bracket Statistics")
+                        st.dataframe(binned_study_df, use_container_width=True)
+                        st.metric("Correlation (Study Hours vs Marks)", f"r = {corr_coef:+.3f}")
+
+                # -------------------------------------------------------------
+                # TAB E: Academic Support Report
+                # -------------------------------------------------------------
+                with tab_supp:
+                    st.markdown("#### 🚨 Academic Support & Mentoring Advisory")
+                    st.caption("Identification of students needing targeted intervention, remedial sessions, or attendance review.")
+
+                    recs_list = analytics.generate_recommendations(merged_df)
+                    rec_counts = analytics.get_recommendation_summary(recs_list)
+
+                    # Avoid double-counting students: compute unique students with at least 1 support trigger
+                    support_student_ids = {
+                        r["student_id"] for r in recs_list if r["category"] in ["Academic Support", "Attendance Review", "Assignment Support"]
+                    }
+
+                    sup_c1, sup_c2, sup_c3, sup_c4 = st.columns(4)
+                    sup_c1.metric("Unique Students Needing Support", len(support_student_ids), help="Distinct students with at least 1 critical indicator")
+                    sup_c2.metric("Academic Support Triggers", rec_counts["Academic Support"], help="Subject scores < 40")
+                    sup_c3.metric("Attendance Review Triggers", rec_counts["Attendance Review"], help="Attendance < 75%")
+                    sup_c4.metric("Assignment Coaching Triggers", rec_counts["Assignment Support"], help="Assignment score < 50")
+
+                    fig_reccat = reports.create_recommendation_category_chart(rec_counts)
+                    st.plotly_chart(fig_reccat, use_container_width=True)
+
+                    st.markdown("##### 📋 Detailed Mentoring Registry")
+                    rec_cat_sel = st.selectbox(
+                        "Filter Registry by Category",
+                        ["All Categories", "Academic Support", "Attendance Review", "Assignment Support", "High Achievement"],
+                        key="rep_rec_cat_filter"
+                    )
+
+                    shown_recs = [
+                        r for r in recs_list
+                        if rec_cat_sel == "All Categories" or r["category"] == rec_cat_sel
+                    ]
+
+                    if not shown_recs:
+                        st.success("No advisory entries match the selected category.")
+                    else:
+                        st.dataframe(
+                            pd.DataFrame(shown_recs)[[
+                                "student_id", "student_name", "department", "subject",
+                                "category", "metric_name", "metric_value", "reason", "actionable_suggestion"
+                            ]],
+                            use_container_width=True,
+                        )
+
+                # -------------------------------------------------------------
+                # TAB F: Overall Academic Summary & Downloads
+                # -------------------------------------------------------------
+                with tab_summary:
+                    st.markdown("#### 📋 Overall Institutional Summary & Export")
+                    st.caption("Synthesized observations and multi-format export capabilities.")
+
+                    st.markdown("##### 📌 Key Data-Driven Observations")
+                    key_obs = reports.generate_key_observations(merged_df, pass_threshold=40.0)
+                    for obs in key_obs:
+                        st.write(f"• {obs}")
+
+                    st.divider()
+
+                    st.markdown("##### 🏢 Department-wise Academic Comparison")
+                    st.dataframe(overall_summary["dept_comparison"], use_container_width=True)
+
+                    st.markdown("##### 🎓 Semester-wise Performance Comparison")
+                    st.dataframe(overall_summary["sem_comparison"], use_container_width=True)
+
+                    st.divider()
+
+                    st.markdown("### 📥 Download Institutional Reports")
+                    d_col1, d_col2 = st.columns(2)
+
+                    with d_col1:
+                        st.markdown("##### 1. Formatted Academic PDF Report")
+                        st.caption("Comprehensive multi-page PDF document with embedded Plotly charts, KPI summary, and observation registry.")
+
+                        # Generate PDF
+                        filter_summary_dict = {
+                            "department": rep_dept,
+                            "semester": rep_sem,
+                            "subject": rep_subj,
+                            "date_scope": rep_time if rep_time != "Custom Range" else f"{rep_from} to {rep_to}",
+                        }
+                        try:
+                            pdf_data = reports.generate_pdf_academic_report(
+                                merged_df,
+                                students_df=students_df,
+                                filters_dict=filter_summary_dict,
+                                pass_threshold=40.0,
+                                attendance_threshold=75.0,
+                            )
+                            st.download_button(
+                                "📄 Download Complete Graphical PDF Report",
+                                pdf_data,
+                                f"edupulse_academic_report_{date.today()}.pdf",
+                                "application/pdf",
+                                type="primary",
+                                key="btn_dl_graph_pdf",
+                            )
+                        except Exception as e:
+                            st.error(f"Error generating PDF report: {e}")
+
+                        st.markdown("##### 2. Raw Filtered Performance Data (CSV)")
+                        csv_raw = merged_df.to_csv(index=False).encode("utf-8")
+                        st.download_button(
+                            "📊 Download Filtered Records (CSV)",
+                            csv_raw,
+                            f"edupulse_filtered_data_{date.today()}.csv",
+                            "text/csv",
+                            key="btn_dl_graph_raw_csv",
+                        )
+
+                    with d_col2:
+                        st.markdown("##### 3. Top-Performing Students Summary (CSV)")
+                        csv_top = top_df.to_csv(index=False).encode("utf-8")
+                        st.download_button(
+                            "🏆 Download Top Students Report (CSV)",
+                            csv_top,
+                            f"edupulse_top_students_{date.today()}.csv",
+                            "text/csv",
+                            key="btn_dl_graph_top_csv",
+                        )
+
+                        st.markdown("##### 4. Subject Assessment Breakdown (CSV)")
+                        csv_subj = subj_perf_df.to_csv(index=False).encode("utf-8")
+                        st.download_button(
+                            "📚 Download Subject Analysis (CSV)",
+                            csv_subj,
+                            f"edupulse_subject_breakdown_{date.today()}.csv",
+                            "text/csv",
+                            key="btn_dl_graph_subj_csv",
+                        )
 
 
 # -----------------------------------------------------------------------------
