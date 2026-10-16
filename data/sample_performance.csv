@@ -1,0 +1,31 @@
+student_id,subject,marks,attendance,study_hours,assignment_score,record_date
+STU101,Data Structures,88.5,92.0,3.5,90.0,2026-03-01
+STU101,Database Systems,82.0,89.5,3.0,85.0,2026-03-05
+STU101,Operating Systems,76.5,88.0,2.5,78.0,2026-03-10
+STU102,Data Structures,94.0,96.0,4.5,95.0,2026-03-01
+STU102,Database Systems,91.0,94.0,4.0,92.0,2026-03-05
+STU102,Computer Networks,89.0,90.0,3.5,88.0,2026-03-12
+STU103,Computer Networks,35.0,68.0,1.0,45.0,2026-03-02
+STU103,Web Technologies,58.0,72.0,1.5,52.0,2026-03-06
+STU103,Software Engineering,62.5,74.0,2.0,60.0,2026-03-11
+STU104,Digital Signal Processing,79.0,85.0,3.0,82.0,2026-03-03
+STU104,Microprocessors,72.0,80.0,2.5,70.0,2026-03-08
+STU104,VLSI Design,84.0,88.0,3.5,86.0,2026-03-15
+STU105,Discrete Mathematics,32.0,62.0,1.0,40.0,2026-03-01
+STU105,Programming in C,55.0,70.0,2.0,58.0,2026-03-07
+STU105,Computer Organization,48.0,65.0,1.5,50.0,2026-03-14
+STU106,Thermodynamics,68.0,81.0,2.5,65.0,2026-03-04
+STU106,Fluid Mechanics,74.0,84.0,3.0,72.0,2026-03-09
+STU106,Machine Design,38.0,70.0,1.5,42.0,2026-03-16
+STU107,Database Systems,85.0,91.0,3.5,84.0,2026-03-05
+STU107,Web Technologies,78.0,87.0,3.0,80.0,2026-03-10
+STU108,Operating Systems,92.0,95.0,4.0,94.0,2026-03-02
+STU108,Computer Networks,87.5,90.0,3.5,89.0,2026-03-08
+STU109,Digital Signal Processing,64.0,76.0,2.0,68.0,2026-03-03
+STU109,Electronic Circuits,36.0,60.0,1.0,42.0,2026-03-12
+STU110,Thermodynamics,71.0,82.0,2.5,75.0,2026-03-04
+STU110,Fluid Mechanics,66.0,78.0,2.0,65.0,2026-03-09
+STU111,Programming in C,83.0,89.0,3.0,85.0,2026-03-01
+STU111,Discrete Mathematics,77.0,86.0,3.0,80.0,2026-03-07
+STU112,Data Structures,69.0,83.0,2.5,70.0,2026-03-01
+STU112,Database Systems,73.0,85.0,2.5,75.0,2026-03-05
