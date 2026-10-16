@@ -43,8 +43,8 @@ CREATE TABLE IF NOT EXISTS performance (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 4. Helpful Indexing for Fast Search & Analytics Filtering
-CREATE INDEX IF NOT EXISTS idx_student_dept ON students(department);
-CREATE INDEX IF NOT EXISTS idx_student_sem ON students(semester);
-CREATE INDEX IF NOT EXISTS idx_perf_student ON performance(student_id);
-CREATE INDEX IF NOT EXISTS idx_perf_subject ON performance(subject);
-CREATE INDEX IF NOT EXISTS idx_perf_date ON performance(record_date);
+CREATE INDEX idx_student_dept ON students(department);
+CREATE INDEX idx_student_sem ON students(semester);
+CREATE INDEX idx_perf_student ON performance(student_id);
+CREATE INDEX idx_perf_subject ON performance(subject);
+CREATE INDEX idx_perf_date ON performance(record_date);
